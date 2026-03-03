@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Snake Pro</title>
+  <style>
+    :root{--bg:#0b1220;--card:#101a2f;--line:#2b3f6d;--text:#eaf1ff;--accent:#58f58a;--food:#ff6b6b;--btn:#2a4a74}
+    *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 10%,#233b71,transparent 45%),radial-gradient(circle at 90% 90%,#1e4f4b,transparent 40%),var(--bg);color:var(--text);display:grid;place-items:center;padding:16px}
+    .card{width:min(96vw,520px);background:rgba(16,26,47,.92);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:14px;box-shadow:0 20px 45px rgba(0,0,0,.35)}
+    h1{margin:4px 0 12px;font-size:24px}
+    .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-weight:700}
+    .pill{background:#0b152a;border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:110px;text-align:center}
+    canvas{width:100%;height:auto;display:block;background:#060d1b;border:1px solid var(--line);border-radius:12px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    button{background:var(--btn);border:0;color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    button:hover{filter:brightness(1.08)}
+    .primary{background:#2f9d67}
+    .danger{background:#9d3a55}
+    .touch{margin-top:12px;display:grid;grid-template-columns:70px 70px 70px;grid-template-rows:58px 58px;gap:8px;justify-content:center}
+    .touch button{padding:0;font-size:22px}
+    .up{grid-column:2;grid-row:1}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}
+    .hint{margin-top:10px;color:#9fb5da;font-size:13px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🐍 Snake Pro</h1>
+    <div class="meta">
+      <div class="pill">分数：<span id="score">0</span></div>
+      <div class="pill">最高：<span id="best">0</span></div>
+      <div class="pill">状态：<span id="state">准备中</span></div>
+    </div>
+    <canvas id="game" width="480" height="480"></canvas>
+    <div class="row">
+      <button class="primary" id="startBtn">开始 / 继续</button>
+      <button id="pauseBtn">暂停</button>
+      <button class="danger" id="restartBtn">重开</button>
+      <button id="speedBtn">速度: 标准</button>
+    </div>
+    <div class="touch">
+      <button class="up" data-dir="up">▲</button>
+      <button class="left" data-dir="left">◀</button>
+      <button class="down" data-dir="down">▼</button>
+      <button class="right" data-dir="right">▶</button>
+    </div>
+    <div class="hint">键盘方向键可控制；空格暂停/继续；R重开。手机可用下方方向键。</div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const stateEl = document.getElementById('state');
+  const speedBtn = document.getElementById('speedBtn');
+
+  const grid = 24;
+  const cell = canvas.width / grid;
+
+  let snake, dir, nextDir, food, running, paused, score, speed, tick;
+  let best = Number(localStorage.getItem('snake_best') || 0);
+  bestEl.textContent = best;
+
+  const speeds = [130, 95, 70];
+  const speedNames = ['标准','快速','极限'];
+  let speedIndex = 0;
+
+  function reset() {
+    snake = [{x: 12, y: 12}, {x:11, y:12}, {x:10, y:12}];
+    dir = 'right';
+    nextDir = 'right';
+    score = 0;
+    scoreEl.textContent = score;
+    paused = false;
+    running = false;
+    speed = speeds[speedIndex];
+    placeFood();
+    setState('准备中');
+    draw();
+  }
+
+  function setState(t){ stateEl.textContent = t; }
+
+  function placeFood() {
+    while (true) {
+      const f = { x: Math.floor(Math.random()*grid), y: Math.floor(Math.random()*grid) };
+      if (!snake.some(s => s.x===f.x && s.y===f.y)) { food = f; return; }
+    }
+  }
+
+  function step() {
+    dir = nextDir;
+    const head = { ...snake[0] };
+    if (dir==='up') head.y--;
+    if (dir==='down') head.y++;
+    if (dir==='left') head.x--;
+    if (dir==='right') head.x++;
+
+    if (head.x < 0 || head.x >= grid || head.y < 0 || head.y >= grid || snake.some(s => s.x===head.x && s.y===head.y)) {
+      gameOver();
+      return;
+    }
+
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) {
+      score += 10;
+      scoreEl.textContent = score;
+      if (score > best) {
+        best = score;
+        localStorage.setItem('snake_best', String(best));
+        bestEl.textContent = best;
+      }
+      placeFood();
+    } else {
+      snake.pop();
+    }
+    draw();
+  }
+
+  function drawCell(x,y,color){
+    ctx.fillStyle = color;
+    ctx.fillRect(x*cell+1, y*cell+1, cell-2, cell-2);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#060d1b';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // 网格
+    ctx.strokeStyle = 'rgba(255,255,255,.05)';
+    ctx.lineWidth = 1;
+    for(let i=0;i<=grid;i++){
+      const p = i*cell;
+      ctx.beginPath(); ctx.moveTo(p,0); ctx.lineTo(p,canvas.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,p); ctx.lineTo(canvas.width,p); ctx.stroke();
+    }
+
+    drawCell(food.x, food.y, '#ff6b6b');
+    snake.forEach((s,i)=> drawCell(s.x, s.y, i===0 ? '#7bf7a5' : '#58f58a'));
+  }
+
+  function loop() {
+    if (!running || paused) return;
+    step();
+    tick = setTimeout(loop, speed);
+  }
+
+  function start() {
+    if (!running) running = true;
+    paused = false;
+    setState('进行中');
+    clearTimeout(tick);
+    loop();
+  }
+
+  function pause() {
+    if (!running) return;
+    paused = !paused;
+    setState(paused ? '已暂停' : '进行中');
+    if (!paused) { clearTimeout(tick); loop(); }
+  }
+
+  function gameOver() {
+    running = false;
+    paused = false;
+    clearTimeout(tick);
+    setState('结束');
+    draw();
+    setTimeout(()=> alert(`游戏结束！得分: ${score}`), 10);
+  }
+
+  function setDirection(d) {
+    const opp = {up:'down', down:'up', left:'right', right:'left'};
+    if (d !== opp[dir]) nextDir = d;
+  }
+
+  document.getElementById('startBtn').onclick = start;
+  document.getElementById('pauseBtn').onclick = pause;
+  document.getElementById('restartBtn').onclick = () => { clearTimeout(tick); reset(); start(); };
+  speedBtn.onclick = () => {
+    speedIndex = (speedIndex + 1) % speeds.length;
+    speed = speeds[speedIndex];
+    speedBtn.textContent = `速度: ${speedNames[speedIndex]}`;
+    if (running && !paused) { clearTimeout(tick); loop(); }
+  };
+
+  document.querySelectorAll('.touch button').forEach(btn => btn.onclick = () => setDirection(btn.dataset.dir));
+
+  window.addEventListener('keydown', (e) => {
+    const map = {ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right'};
+    if (map[e.key]) { e.preventDefault(); setDirection(map[e.key]); }
+    if (e.code === 'Space') { e.preventDefault(); pause(); }
+    if (e.key.toLowerCase() === 'r') { e.preventDefault(); clearTimeout(tick); reset(); start(); }
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>
