@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>切水果</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #14213d, #0a0f1f 70%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .wrap { text-align: center; padding: 16px; }
+    h1 { margin: 0 0 8px; font-size: 34px; }
+    p { margin: 0 0 14px; color: #c9d7ff; }
+    canvas {
+      background: linear-gradient(180deg, #152238, #0d1524 70%, #101924);
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.4);
+      border: 1px solid rgba(255,255,255,.12);
+      max-width: calc(100vw - 24px);
+      max-height: calc(100vh - 120px);
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>切水果</h1>
+    <p>手指或鼠标滑动切开水果，别碰炸弹</p>
+    <canvas id="game" width="420" height="760"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const state = {
+      fruits: [],
+      particles: [],
+      trail: [],
+      score: 0,
+      best: Number(localStorage.getItem('fruit-slice-best') || 0),
+      lives: 3,
+      gameOver: false,
+      lastSpawn: 0,
+      pointerDown: false
+    };
+
+    const fruitTypes = [
+      { name: 'watermelon', color: '#2ecc71', flesh: '#ff6b81' },
+      { name: 'orange', color: '#ffa502', flesh: '#ffbe76' },
+      { name: 'apple', color: '#ff4757', flesh: '#ff9aa2' },
+      { name: 'kiwi', color: '#7bed9f', flesh: '#c7f9cc' }
+    ];
+
+    function reset() {
+      state.fruits = [];
+      state.particles = [];
+      state.trail = [];
+      state.score = 0;
+      state.lives = 3;
+      state.gameOver = false;
+      state.lastSpawn = 0;
+    }
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
+    function spawnFruit(now) {
+      const interval = state.score > 25 ? 420 : 560;
+      if (now - state.lastSpawn < interval || state.gameOver) return;
+      state.lastSpawn = now;
+      const isBomb = Math.random() < Math.min(0.18, 0.08 + state.score / 300);
+      const type = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
+      state.fruits.push({
+        x: rand(50, canvas.width - 50),
+        y: canvas.height + 30,
+        vx: rand(-2.8, 2.8),
+        vy: rand(-14, -11),
+        g: 0.22,
+        r: isBomb ? 24 : rand(26, 34),
+        sliced: false,
+        bomb: isBomb,
+        rot: rand(0, Math.PI * 2),
+        vr: rand(-0.08, 0.08),
+        type
+      });
+    }
+
+    function addTrail(x, y) {
+      state.trail.push({ x, y, life: 1 });
+      if (state.trail.length > 18) state.trail.shift();
+    }
+
+    function slashAt(x, y) {
+      if (state.gameOver) return;
+      for (const f of state.fruits) {
+        if (f.sliced) continue;
+        const dx = x - f.x;
+        const dy = y - f.y;
+        if (Math.hypot(dx, dy) < f.r + 12) {
+          f.sliced = true;
+          if (f.bomb) {
+            explode(f.x, f.y, '#ffd166', 36);
+            state.gameOver = true;
+            state.best = Math.max(state.best, state.score);
+            localStorage.setItem('fruit-slice-best', String(state.best));
+          } else {
+            state.score += 1;
+            explode(f.x, f.y, f.type.flesh, 18);
+          }
+        }
+      }
+    }
+
+    function explode(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        state.particles.push({
+          x, y,
+          vx: rand(-5, 5),
+          vy: rand(-5, 5),
+          life: rand(20, 36),
+          color
+        });
+      }
+    }
+
+    function onMove(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (clientX - rect.left) * (canvas.width / rect.width);
+      const y = (clientY - rect.top) * (canvas.height / rect.height);
+      addTrail(x, y);
+      slashAt(x, y);
+    }
+
+    canvas.addEventListener('pointerdown', e => {
+      state.pointerDown = true;
+      onMove(e.clientX, e.clientY);
+    });
+    canvas.addEventListener('pointermove', e => { if (state.pointerDown) onMove(e.clientX, e.clientY); });
+    addEventListener('pointerup', () => state.pointerDown = false);
+
+    addEventListener('keydown', e => {
+      if (state.gameOver && e.key.toLowerCase() === 'r') reset();
+    });
+
+    function update(now) {
+      spawnFruit(now);
+
+      for (const f of state.fruits) {
+        f.x += f.vx;
+        f.y += f.vy;
+        f.vy += f.g;
+        f.rot += f.vr;
+      }
+
+      for (const f of state.fruits) {
+        if (!f.sliced && !f.bomb && f.y > canvas.height + 40) {
+          f.sliced = true;
+          state.lives -= 1;
+          if (state.lives <= 0) {
+            state.gameOver = true;
+            state.best = Math.max(state.best, state.score);
+            localStorage.setItem('fruit-slice-best', String(state.best));
+          }
+        }
+      }
+
+      state.fruits = state.fruits.filter(f => f.y < canvas.height + 100 && !(f.sliced && f.y > canvas.height + 80));
+
+      for (const p of state.particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.14;
+        p.life -= 1;
+      }
+      state.particles = state.particles.filter(p => p.life > 0);
+
+      for (const t of state.trail) t.life -= 0.08;
+      state.trail = state.trail.filter(t => t.life > 0);
+    }
+
+    function drawFruit(f) {
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rot);
+      if (f.bomb) {
+        ctx.fillStyle = '#2f3542';
+        ctx.beginPath();
+        ctx.arc(0, 0, f.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff4757';
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffa502';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, -f.r);
+        ctx.lineTo(8, -f.r - 14);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = f.type.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, f.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.22)';
+        ctx.beginPath();
+        ctx.arc(-f.r/3, -f.r/3, f.r/3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < state.trail.length - 1; i++) {
+        const a = state.trail[i], b = state.trail[i + 1];
+        ctx.strokeStyle = `rgba(255,255,255,${a.life * 0.8})`;
+        ctx.lineWidth = 5 * a.life;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      for (const f of state.fruits) if (!f.sliced) drawFruit(f);
+
+      for (const p of state.particles) {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.life / 36);
+        ctx.fillRect(p.x, p.y, 5, 5);
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = 'rgba(8, 16, 32, .72)';
+      ctx.fillRect(14, 14, 164, 82);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(`得分 ${state.score}`, 26, 42);
+      ctx.font = '15px sans-serif';
+      ctx.fillText(`最高 ${state.best}`, 26, 66);
+      ctx.fillText(`生命 ${'❤'.repeat(Math.max(0, state.lives))}`, 26, 88);
+
+      if (state.gameOver) {
+        ctx.fillStyle = 'rgba(0,0,0,.58)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 38px sans-serif';
+        ctx.fillText('游戏结束', canvas.width / 2, canvas.height / 2 - 20);
+        ctx.font = '20px sans-serif';
+        ctx.fillText(`最终得分：${state.score}`, canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText('按 R 重新开始', canvas.width / 2, canvas.height / 2 + 58);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function loop(now) {
+      update(now);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
