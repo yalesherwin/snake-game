@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>五子棋</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'PingFang SC',sans-serif;color:#fff}
+h1{font-size:28px;letter-spacing:6px;margin-bottom:16px;color:#e8c840;text-shadow:0 0 20px rgba(232,200,64,.4)}
+#info{display:flex;gap:30px;margin-bottom:14px;align-items:center}
+.player-card{padding:8px 22px;border-radius:20px;font-size:14px;letter-spacing:2px;border:2px solid transparent;transition:all .3s}
+.player-card.active{border-color:#e8c840;box-shadow:0 0 14px rgba(232,200,64,.4);background:rgba(232,200,64,.12)}
+#black-card{background:rgba(0,0,0,.4)}
+#white-card{background:rgba(255,255,255,.1)}
+#status{font-size:16px;color:#aaa;letter-spacing:2px;margin-bottom:10px;height:24px}
+canvas{border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6);cursor:pointer}
+#btns{display:flex;gap:12px;margin-top:14px}
+button{padding:10px 28px;background:transparent;border:1.5px solid #e8c840;color:#e8c840;border-radius:20px;font-size:14px;letter-spacing:2px;cursor:pointer;transition:all .25s;font-family:inherit}
+button:hover{background:#e8c840;color:#000}
+#mode-btn{border-color:#7ec8e8;color:#7ec8e8}
+#mode-btn:hover{background:#7ec8e8;color:#000}
+</style>
+</head>
+<body>
+<h1>五子棋</h1>
+<div id="info">
+  <div class="player-card active" id="black-card">⚫ 黑棋</div>
+  <div class="player-card" id="white-card">⚪ 白棋</div>
+</div>
+<div id="status">黑棋先行</div>
+<canvas id="board" width="540" height="540"></canvas>
+<div id="btns">
+  <button onclick="restart()">↺ 重新开始</button>
+  <button id="mode-btn" onclick="toggleMode()">🤖 人机对战</button>
+  <button onclick="undo()">← 悔棋</button>
+</div>
+
+<script>
+const cv=document.getElementById('board'),ctx=cv.getContext('2d');
+const N=15,S=36,PAD=18;
+let board,current,over,history,vsAI,aiThinking;
+
+function init(){
+  board=Array.from({length:N},()=>Array(N).fill(0));
+  current=1; over=false; history=[]; aiThinking=false;
+  render(); updateStatus();
+}
+
+function toggleMode(){
+  vsAI=!vsAI;
+  document.getElementById('mode-btn').textContent=vsAI?'👤 双人对战':'🤖 人机对战';
+  restart();
+}
+
+function restart(){init();}
+
+function undo(){
+  if(over){over=false;}
+  if(vsAI){
+    if(history.length>=2){const m2=history.pop();board[m2.r][m2.c]=0;const m1=history.pop();board[m1.r][m1.c]=0;current=1;}
+  } else {
+    if(history.length>0){const m=history.pop();board[m.r][m.c]=0;current=current===1?2:1;}
+  }
+  render(); updateStatus();
+}
+
+function px(i){return PAD+i*S;}
+
+function render(){
+  // Board background
+  const bg=ctx.createLinearGradient(0,0,cv.width,cv.height);
+  bg.addColorStop(0,'#c8a050'); bg.addColorStop(.5,'#d4a855'); bg.addColorStop(1,'#b8903a');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,cv.width,cv.height);
+
+  // Wood grain
+  ctx.save(); ctx.globalAlpha=.06; ctx.strokeStyle='#8a6020'; ctx.lineWidth=1;
+  for(let i=0;i<30;i++){ctx.beginPath();ctx.moveTo(0,i*20+(Math.random()*5-2.5));ctx.bezierCurveTo(cv.width*.3,i*20+(Math.random()*8-4),cv.width*.7,i*20+(Math.random()*8-4),cv.width,i*20+(Math.random()*5-2.5));ctx.stroke();}
+  ctx.restore();
+
+  // Grid lines
+  ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=1;
+  for(let i=0;i<N;i++){
+    ctx.beginPath(); ctx.moveTo(px(0),px(i)); ctx.lineTo(px(N-1),px(i)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(i),px(0)); ctx.lineTo(px(i),px(N-1)); ctx.stroke();
+  }
+
+  // Star points
+  const stars=[[3,3],[3,7],[3,11],[7,3],[7,7],[7,11],[11,3],[11,7],[11,11]];
+  ctx.fillStyle='rgba(0,0,0,.6)';
+  stars.forEach(([r,c])=>{ctx.beginPath();ctx.arc(px(c),px(r),3.5,0,Math.PI*2);ctx.fill();});
+
+  // Border
+  ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.lineWidth=2;
+  ctx.strokeRect(px(0),px(0),px(N-1)-px(0),px(N-1)-px(0));
+
+  // Stones
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(board[r][c]) drawStone(r,c,board[r][c]);
+
+  // Last move marker
+  if(history.length>0){
+    const last=history[history.length-1];
+    ctx.strokeStyle=board[last.r][last.c]===1?'rgba(255,80,80,.9)':'rgba(80,80,255,.9)';
+    ctx.lineWidth=2;
+    const x=px(last.c),y=px(last.r),hs=6;
+    ctx.beginPath(); ctx.moveTo(x-hs,y-hs); ctx.lineTo(x+hs,y+hs); ctx.moveTo(x+hs,y-hs); ctx.lineTo(x-hs,y+hs); ctx.stroke();
+  }
+}
+
+function drawStone(r,c,player){
+  const x=px(c),y=px(r),rad=S*.44;
+  ctx.save();
+  if(player===1){
+    const g=ctx.createRadialGradient(x-rad*.3,y-rad*.3,rad*.05,x,y,rad);
+    g.addColorStop(0,'#555'); g.addColorStop(.4,'#1a1a1a'); g.addColorStop(1,'#000');
+    ctx.fillStyle=g;
+  } else {
+    const g=ctx.createRadialGradient(x-rad*.35,y-rad*.35,rad*.05,x,y,rad);
+    g.addColorStop(0,'#fff'); g.addColorStop(.4,'#e8e8e8'); g.addColorStop(1,'#aaa');
+    ctx.fillStyle=g;
+    ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=4; ctx.shadowOffsetX=2; ctx.shadowOffsetY=2;
+  }
+  ctx.beginPath(); ctx.arc(x,y,rad,0,Math.PI*2); ctx.fill();
+  // Highlight
+  ctx.fillStyle=player===1?'rgba(255,255,255,.18)':'rgba(255,255,255,.6)';
+  ctx.beginPath(); ctx.ellipse(x-rad*.25,y-rad*.3,rad*.3,rad*.2,-.4,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function updateStatus(){
+  const bc=document.getElementById('black-card'),wc=document.getElementById('white-card');
+  const st=document.getElementById('status');
+  bc.classList.toggle('active',current===1&&!over);
+  wc.classList.toggle('active',current===2&&!over);
+  if(!over) st.textContent=(current===1?'⚫ 黑棋':'⚪ 白棋')+'落子'+(aiThinking?' (AI思考中...）':'');
+}
+
+// ── Win check ──
+function checkWin(r,c,p){
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(const [dr,dc] of dirs){
+    let cnt=1;
+    for(let i=1;i<5;i++){const nr=r+dr*i,nc=c+dc*i;if(nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==p)break;cnt++;}
+    for(let i=1;i<5;i++){const nr=r-dr*i,nc=c-dc*i;if(nr<0||nr>=N||nc<0||nc>=N||board[nr][nc]!==p)break;cnt++;}
+    if(cnt>=5) return true;
+  }
+  return false;
+}
+
+// ── AI (Minimax depth 3 with alpha-beta) ──
+const SCORES={five:1e8,four:1e5,three:1e3,two:100,one:10};
+
+function evalLine(cells,p){
+  const op=p===1?2:1;
+  let s=0,cnt=0,open=0,blocked=0;
+  let inSeq=false;
+  for(let i=0;i<cells.length;i++){
+    if(cells[i]===p){cnt++;inSeq=true;}
+    else if(cells[i]===0){if(inSeq){open++;inSeq=false;}if(cnt>0){s+=scoreSeq(cnt,open,blocked);cnt=0;open=0;blocked=0;}open++;}
+    else{if(inSeq){blocked++;inSeq=false;}if(cnt>0){s+=scoreSeq(cnt,open,blocked);cnt=0;open=0;blocked=0;}blocked++;}
+  }
+  if(cnt>0) s+=scoreSeq(cnt,open,blocked);
+  return s;
+}
+
+function scoreSeq(cnt,open,blocked){
+  if(cnt>=5) return SCORES.five;
+  if(cnt===4) return open>0?SCORES.four:SCORES.three/2;
+  if(cnt===3) return open>=2?SCORES.three:open===1?SCORES.two:0;
+  if(cnt===2) return open>=2?SCORES.two:open===1?SCORES.one:0;
+  return open>0?SCORES.one/2:0;
+}
+
+function evalBoard(p){
+  const op=p===1?2:1;
+  let score=0;
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(const [dr,dc] of dirs){
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+      // build line
+      const line=[];
+      for(let i=-(N-1);i<N;i++){const nr=r+dr*i,nc=c+dc*i;if(nr>=0&&nr<N&&nc>=0&&nc<N)line.push(board[nr][nc]);}
+      if(line.length>=5){score+=evalLine(line,p)*2-evalLine(line,op);}
+    }
+  }
+  return score;
+}
+
+function getCandidates(){
+  const cands=new Set();
+  const range=2;
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    if(board[r][c]!==0){
+      for(let dr=-range;dr<=range;dr++) for(let dc=-range;dc<=range;dc++){
+        const nr=r+dr,nc=c+dc;
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&board[nr][nc]===0) cands.add(nr*N+nc);
+      }
+    }
+  }
+  if(cands.size===0){cands.add(7*N+7);}
+  return [...cands].map(k=>({r:~~(k/N),c:k%N}));
+}
+
+function minimax(depth,alpha,beta,isMax,p){
+  const op=p===1?2:1;
+  if(depth===0) return evalBoard(2); // AI is 2
+  const cands=getCandidates();
+  if(cands.length===0) return 0;
+  if(isMax){
+    let best=-Infinity;
+    for(const {r,c} of cands){
+      board[r][c]=2;
+      if(checkWin(r,c,2)){board[r][c]=0;return SCORES.five*(depth+1);}
+      const sc=minimax(depth-1,alpha,beta,false,p);
+      board[r][c]=0;
+      best=Math.max(best,sc); alpha=Math.max(alpha,best);
+      if(beta<=alpha) break;
+    }
+    return best;
+  } else {
+    let best=Infinity;
+    for(const {r,c} of cands){
+      board[r][c]=1;
+      if(checkWin(r,c,1)){board[r][c]=0;return -SCORES.five*(depth+1);}
+      const sc=minimax(depth-1,alpha,beta,true,p);
+      board[r][c]=0;
+      best=Math.min(best,sc); beta=Math.min(beta,best);
+      if(beta<=alpha) break;
+    }
+    return best;
+  }
+}
+
+function aiMove(){
+  aiThinking=true; updateStatus();
+  setTimeout(()=>{
+    let bestScore=-Infinity, bestMove=null;
+    const cands=getCandidates();
+    // Check immediate win/block
+    for(const {r,c} of cands){
+      board[r][c]=2; if(checkWin(r,c,2)){board[r][c]=0;bestMove={r,c};bestScore=SCORES.five;break;} board[r][c]=0;
+    }
+    if(!bestMove){
+      for(const {r,c} of cands){
+        board[r][c]=1; if(checkWin(r,c,1)){board[r][c]=0;bestMove={r,c};bestScore=SCORES.five-1;break;} board[r][c]=0;
+      }
+    }
+    if(!bestMove){
+      for(const {r,c} of cands){
+        board[r][c]=2;
+        const sc=minimax(2,-Infinity,Infinity,false,2);
+        board[r][c]=0;
+        if(sc>bestScore){bestScore=sc;bestMove={r,c};}
+      }
+    }
+    aiThinking=false;
+    if(bestMove) placeStone(bestMove.r,bestMove.c);
+  },30);
+}
+
+function placeStone(r,c){
+  board[r][c]=current;
+  history.push({r,c});
+  render();
+  if(checkWin(r,c,current)){
+    over=true;
+    render();
+    setTimeout(()=>{
+      document.getElementById('status').textContent=(current===1?'⚫ 黑棋':'⚪ 白棋')+' 获胜！🎉';
+      document.getElementById('black-card').classList.remove('active');
+      document.getElementById('white-card').classList.remove('active');
+    },50);
+    return;
+  }
+  // Draw check
+  if(history.length===N*N){document.getElementById('status').textContent='平局！';over=true;return;}
+  current=current===1?2:1;
+  updateStatus();
+  if(vsAI&&current===2&&!over) aiMove();
+}
+
+cv.addEventListener('click',e=>{
+  if(over||aiThinking) return;
+  if(vsAI&&current===2) return;
+  const rect=cv.getBoundingClientRect();
+  const scaleX=cv.width/rect.width, scaleY=cv.height/rect.height;
+  const x=(e.clientX-rect.left)*scaleX, y=(e.clientY-rect.top)*scaleY;
+  const c=Math.round((x-PAD)/S), r=Math.round((y-PAD)/S);
+  if(r<0||r>=N||c<0||c>=N||board[r][c]!==0) return;
+  placeStone(r,c);
+});
+
+// Mobile touch
+cv.addEventListener('touchend',e=>{
+  e.preventDefault();
+  if(over||aiThinking) return;
+  if(vsAI&&current===2) return;
+  const rect=cv.getBoundingClientRect();
+  const scaleX=cv.width/rect.width, scaleY=cv.height/rect.height;
+  const x=(e.changedTouches[0].clientX-rect.left)*scaleX, y=(e.changedTouches[0].clientY-rect.top)*scaleY;
+  const c=Math.round((x-PAD)/S), r=Math.round((y-PAD)/S);
+  if(r<0||r>=N||c<0||c>=N||board[r][c]!==0) return;
+  placeStone(r,c);
+},{passive:false});
+
+vsAI=false; init();
+</script>
+</body>
+</html>
