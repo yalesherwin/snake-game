@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Puock Theme Demo · 个人博客</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#fff;
+  --bg2:#f8f8f8;
+  --text:#333;
+  --sub:#888;
+  --border:#e8e8e8;
+  --accent:#6c63ff;
+  --accent2:#ff6584;
+  --card-shadow:0 2px 12px rgba(0,0,0,.08);
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Segoe UI',sans-serif;font-size:15px;line-height:1.7}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{font-size:20px;font-weight:800;letter-spacing:1px;color:#111}
+.logo span{color:var(--accent)}
+nav{display:flex;gap:28px;font-size:14px;color:var(--sub)}
+nav a{transition:.2s;cursor:pointer}
+nav a:hover{color:var(--accent)}
+.header-right{display:flex;gap:14px;align-items:center}
+.search-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;font-size:14px}
+.search-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── LAYOUT ── */
+.container{max-width:1180px;margin:0 auto;padding:0 24px}
+.main-layout{display:grid;grid-template-columns:1fr 300px;gap:32px;padding:32px 0 60px}
+@media(max-width:900px){.main-layout{grid-template-columns:1fr}.sidebar{display:none}}
+
+/* ── HERO BANNER ── */
+.hero{
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:#fff;
+  padding:60px 24px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='rgba(255,255,255,.05)' stroke-width='1'/%3E%3C/svg%3E") repeat;
+}
+.hero-avatar{
+  width:88px;height:88px;border-radius:50%;
+  background:linear-gradient(135deg,#f093fb,#f5576c);
+  margin:0 auto 16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;
+  border:4px solid rgba(255,255,255,.4);
+  box-shadow:0 8px 24px rgba(0,0,0,.2);
+  position:relative;z-index:1;
+}
+.hero h1{font-size:28px;font-weight:800;margin-bottom:8px;position:relative;z-index:1}
+.hero p{font-size:14px;opacity:.85;margin-bottom:20px;position:relative;z-index:1}
+.hero-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1}
+.htag{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:4px 12px;font-size:12px}
+.hero-stats{display:flex;gap:32px;justify-content:center;margin-top:24px;position:relative;z-index:1}
+.hstat{text-align:center}
+.hstat .n{font-size:24px;font-weight:800}
+.hstat .l{font-size:12px;opacity:.75}
+
+/* ── POST CARDS ── */
+.post-list{display:flex;flex-direction:column;gap:20px}
+.post-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  transition:.25s;
+  cursor:pointer;
+}
+.post-card:hover{transform:translateY(-3px);box-shadow:var(--card-shadow);border-color:rgba(108,99,255,.2)}
+.post-cover{
+  height:180px;
+  position:relative;overflow:hidden;
+}
+.post-cover-img{
+  width:100%;height:100%;
+  object-fit:cover;
+  transition:.3s;
+}
+.post-card:hover .post-cover-img{transform:scale(1.04)}
+.post-cat{
+  position:absolute;top:12px;left:12px;
+  background:var(--accent);color:#fff;
+  padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;
+}
+.post-body{padding:18px 20px}
+.post-meta{font-size:12px;color:var(--sub);margin-bottom:8px;display:flex;gap:12px;align-items:center}
+.post-title{font-size:17px;font-weight:700;margin-bottom:8px;line-height:1.4;transition:.2s}
+.post-card:hover .post-title{color:var(--accent)}
+.post-excerpt{font-size:13px;color:var(--sub);line-height:1.6;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.post-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--sub)}
+.post-tags{display:flex;gap:6px}
+.ptag{background:#f0f0f0;border-radius:4px;padding:2px 7px;font-size:11px}
+.read-more{color:var(--accent);font-weight:600;font-size:12px;display:flex;align-items:center;gap:3px}
+
+/* Horizontal card variant */
+.post-card.horizontal{display:grid;grid-template-columns:200px 1fr}
+.post-card.horizontal .post-cover{height:auto;min-height:140px}
+.post-card.horizontal .post-cover-img{height:100%}
+
+/* ── PAGINATION ── */
+.pagination{display:flex;gap:8px;justify-content:center;margin-top:32px}
+.page-btn{
+  width:36px;height:36px;border-radius:8px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;transition:.2s;
+}
+.page-btn:hover,.page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── SIDEBAR ── */
+.sidebar{display:flex;flex-direction:column;gap:20px}
+.widget{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.widget-head{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;font-weight:700;
+  display:flex;align-items:center;gap:8px;
+}
+.widget-head::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;display:inline-block}
+.widget-body{padding:16px 18px}
+
+/* Recent posts widget */
+.recent-item{display:flex;gap:10px;margin-bottom:14px;cursor:pointer}
+.recent-item:last-child{margin-bottom:0}
+.recent-thumb{
+  width:56px;height:56px;border-radius:8px;flex-shrink:0;
+  overflow:hidden;
+}
+.rt-img{width:100%;height:100%;object-fit:cover}
+.recent-info h4{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:3px;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.recent-info p{font-size:11px;color:var(--sub)}
+
+/* Tags widget */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:7px}
+.tag-item{
+  background:#f5f5f5;border-radius:6px;padding:5px 10px;
+  font-size:12px;cursor:pointer;transition:.2s;border:1px solid transparent;
+}
+.tag-item:hover{background:#f0ecff;border-color:rgba(108,99,255,.3);color:var(--accent)}
+
+/* Categories */
+.cat-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--border);
+  cursor:pointer;font-size:13px;
+}
+.cat-item:last-child{border:none}
+.cat-item:hover .cat-name{color:var(--accent)}
+.cat-count{background:#f0f0f0;border-radius:999px;padding:2px 8px;font-size:11px;color:var(--sub)}
+
+/* ── TOP POSTS ── */
+.top-post{
+  display:flex;gap:8px;align-items:flex-start;
+  padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;
+}
+.top-post:last-child{border:none}
+.top-num{
+  width:22px;height:22px;border-radius:6px;
+  background:var(--accent);color:#fff;
+  font-size:11px;font-weight:800;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;margin-top:2px;
+}
+.top-num.n2{background:#f5576c}
+.top-num.n3{background:#ffa63e}
+.top-num.n4,.top-num.n5{background:#e0e0e0;color:#888}
+.top-title{font-size:13px;line-height:1.4;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ── ANNOUNCEMENT ── */
+.announce{
+  background:linear-gradient(135deg,#f093fb22,#f5576c11);
+  border:1px solid #f5576c33;
+  border-radius:12px;padding:14px 16px;
+  font-size:13px;color:#c44;line-height:1.6;
+}
+.announce strong{color:var(--accent2)}
+
+/* ── DARK MODE TOGGLE ── */
+.dark-toggle{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;
+  transition:.2s;
+}
+.dark-toggle:hover{background:var(--border)}
+
+/* ── DARK MODE ── */
+body.dark{
+  --bg:#1a1a2e;--bg2:#16213e;--text:#e0e0e0;--sub:#888;--border:#2a2a4a;
+  background:var(--bg);
+}
+body.dark header{background:rgba(26,26,46,.92)}
+body.dark .post-card,.body.dark .widget{background:#16213e;border-color:#2a2a4a}
+body.dark .ptag,.body.dark .tag-item{background:#1e1e3a}
+body.dark .post-card{background:#16213e}
+body.dark .widget{background:#16213e}
+
+/* ── MOBILE NAV ── */
+.menu-toggle{display:none;font-size:20px;cursor:pointer}
+@media(max-width:720px){
+  nav{display:none}
+  .menu-toggle{display:block}
+}
+
+/* ── BACK TO TOP ── */
+.back-top{
+  position:fixed;bottom:24px;right:24px;
+  width:40px;height:40px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;cursor:pointer;
+  box-shadow:0 4px 14px rgba(108,99,255,.4);
+  transition:.25s;
+  opacity:0;pointer-events:none;
+}
+.back-top.visible{opacity:1;pointer-events:all}
+.back-top:hover{transform:translateY(-3px)}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  padding:40px 24px 24px;
+  text-align:center;
+}
+.footer-inner{max-width:800px;margin:0 auto}
+.footer-links{display:flex;gap:20px;justify-content:center;font-size:13px;color:var(--sub);margin-bottom:16px;flex-wrap:wrap}
+.footer-links a:hover{color:var(--accent)}
+.footer-copy{font-size:12px;color:var(--sub)}
+.footer-copy span{color:var(--accent)}
+
+/* Gradient placeholder covers */
+.cover-grad1{background:linear-gradient(135deg,#667eea,#764ba2)}
+.cover-grad2{background:linear-gradient(135deg,#f093fb,#f5576c)}
+.cover-grad3{background:linear-gradient(135deg,#4facfe,#00f2fe)}
+.cover-grad4{background:linear-gradient(135deg,#43e97b,#38f9d7)}
+.cover-grad5{background:linear-gradient(135deg,#fa709a,#fee140)}
+.cover-grad6{background:linear-gradient(135deg,#a18cd1,#fbc2eb)}
+
+/* Post label placeholder */
+.cover-text{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">Pu<span>ock</span></div>
+  <nav>
+    <a>首页</a>
+    <a>文章</a>
+    <a>分类</a>
+    <a>归档</a>
+    <a>关于</a>
+    <a>友链</a>
+  </nav>
+  <div class="header-right">
+    <div class="search-btn">🔍</div>
+    <div class="dark-toggle" onclick="toggleDark()">🌙</div>
+    <span class="menu-toggle">☰</span>
+  </div>
+</header>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-avatar">✨</div>
+  <h1>宋学文的博客</h1>
+  <p>分享技术、生活与思考 · 每天进步一点点</p>
+  <div class="hero-tags">
+    <span class="htag">钢铁贸易</span>
+    <span class="htag">科技爱好者</span>
+    <span class="htag">学习俄语</span>
+    <span class="htag">足迹世界</span>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><div class="n">128</div><div class="l">文章</div></div>
+    <div class="hstat"><div class="n">3.2k</div><div class="l">访客</div></div>
+    <div class="hstat"><div class="n">256</div><div class="l">评论</div></div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+  <div class="main-layout">
+
+    <!-- Posts -->
+    <main>
+      <div class="post-list">
+
+        <!-- Post 1 (horizontal) -->
+        <div class="post-card horizontal">
+          <div class="post-cover">
+            <div class="cover-text cover-grad1">🌍</div>
+            <span class="post-cat">贸易</span>
+          </div>
+          <div>
+            <div class="post-body">
+              <div class="post-meta">
+                <span>📅 2026-04-02</span>
+                <span>👁 1,234</span>
+                <span>💬 23</span>
+              </div>
+              <div class="post-title">2026年俄罗斯钢铁市场深度分析：PPGI出口机遇与挑战</div>
+              <div class="post-excerpt">随着卢布汇率趋于稳定，俄罗斯市场对中国彩涂板的需求持续增长。本文深度解析当前市场格局，分析价格走势与贸易机会，为出口商提供决策参考...</div>
+            </div>
+            <div class="post-footer">
+              <div class="post-tags">
+                <span class="ptag">钢铁</span>
+                <span class="ptag">俄罗斯</span>
+                <span class="ptag">出口</span>
+              </div>
+              <span class="read-more">阅读全文 →</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post 2 -->
+        <div class="post-card">
+          <div class="post-cover">
+            <div class="cover-text cover-grad2">🇰🇷</div>
+            <span class="post-cat">旅行</span>
+          </div>
+          <div class="post-body">
+            <div class="post-meta">
+              <span>📅 2026-03-30</span>
+              <span>👁 892</span>
+              <span>💬 18</span>
+            </div>
+            <div class="post-title">首次韩国之旅：首尔7天深度游攻略与实用韩语速成</div>
+            <div class="post-excerpt">这次首尔之行让我深刻体验了韩国饮食文化的魅力。从明洞到弘大，从三겹살到소주，用谐音记忆法学会了50句实用韩语，原来出门在外，语言真的很重要...</div>
+          </div>
+          <div class="post-footer">
+            <div class="post-tags">
+              <span class="ptag">韩国</span>
+              <span class="ptag">旅行</span>
+              <span class="ptag">韩语</span>
+            </div>
+            <span class="read-more">阅读全文 →</span>
+          </div>
+        </div>
+
+        <!-- Post 3 (horizontal) -->
+        <div class="post-card horizontal">
+          <div class="post-cover">
+            <div class="cover-text cover-grad3">🤖</div>
+            <span class="post-cat">科技</span>
+          </div>
+          <div>
+            <div class="post-body">
+              <div class="post-meta">
+                <span>📅 2026-03-25</span>
+                <span>👁 2,156</span>
+                <span>💬 45</span>
+              </div>
+              <div class="post-title">用OpenClaw打造专属AI助手：从报价到合同全自动化</div>
+              <div class="post-excerpt">将AI融入日常业务后，报价速度提升了80%，合同生成只需30秒。本文分享我是如何配置AI助手实现钢铁贸易全流程自动化的实战经验...</div>
+            </div>
+            <div class="post-footer">
+              <div class="post-tags">
+                <span class="ptag">AI</span>
+                <span class="ptag">自动化</span>
+                <span class="ptag">效率</span>
+              </div>
+              <span class="read-more">阅读全文 →</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post 4 -->
+        <div class="post-card">
+          <div class="post-cover">
+            <div class="cover-text cover-grad4">🎮</div>
+            <span class="post-cat">生活</span>
+          </div>
+          <div class="post-body">
+            <div class="post-meta">
+              <span>📅 2026-03-20</span>
+              <span>👁 567</span>
+              <span>💬 12</span>
+            </div>
+            <div class="post-title">周末用AI做了个够级游戏小程序，竟然还挺好玩</div>
+            <div class="post-excerpt">一直想做个山东够级的在线版本，周末花了一个下午，配合AI生成了完整的小程序原型。6人对战、自动分组、红包奖励，实现了大半功能...</div>
+          </div>
+          <div class="post-footer">
+            <div class="post-tags">
+              <span class="ptag">够级</span>
+              <span class="ptag">小程序</span>
+              <span class="ptag">AI开发</span>
+            </div>
+            <span class="read-more">阅读全文 →</span>
+          </div>
+        </div>
+
+        <!-- Post 5 (horizontal) -->
+        <div class="post-card horizontal">
+          <div class="post-cover">
+            <div class="cover-text cover-grad5">🇷🇺</div>
+            <span class="post-cat">学习</span>
+          </div>
+          <div>
+            <div class="post-body">
+              <div class="post-meta">
+                <span>📅 2026-03-18</span>
+                <span>👁 1,023</span>
+                <span>💬 31</span>
+              </div>
+              <div class="post-title">30天俄语速成：用谐音记忆法搞定商务场景300句</div>
+              <div class="post-excerpt">做俄罗斯贸易却不会俄语是最大的障碍。通过AI每天推送+谐音记忆法，30天学了300句常用商务俄语，现在和俄罗斯客户沟通基本顺畅了...</div>
+            </div>
+            <div class="post-footer">
+              <div class="post-tags">
+                <span class="ptag">俄语</span>
+                <span class="ptag">语言学习</span>
+              </div>
+              <span class="read-more">阅读全文 →</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <div class="page-btn active">1</div>
+        <div class="page-btn">2</div>
+        <div class="page-btn">3</div>
+        <div class="page-btn">···</div>
+        <div class="page-btn">12</div>
+        <div class="page-btn">›</div>
+      </div>
+    </main>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+      <!-- Announce -->
+      <div class="announce">
+        <strong>📢 公告：</strong>博客已迁移至新服务器，访问速度大幅提升！欢迎持续关注，每周更新 2-3 篇原创内容。
+      </div>
+
+      <!-- Author -->
+      <div class="widget">
+        <div class="widget-head">关于博主</div>
+        <div class="widget-body" style="text-align:center">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px">✨</div>
+          <div style="font-weight:700;margin-bottom:4px">宋学文</div>
+          <div style="font-size:12px;color:var(--sub);margin-bottom:14px">钢铁贸易 · AI爱好者 · 世界探索者</div>
+          <div style="display:flex;justify-content:center;gap:10px;font-size:20px">
+            <span style="cursor:pointer">💬</span>
+            <span style="cursor:pointer">📧</span>
+            <span style="cursor:pointer">🐦</span>
+            <span style="cursor:pointer">📱</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hot posts -->
+      <div class="widget">
+        <div class="widget-head">热门文章</div>
+        <div class="widget-body">
+          <div class="top-post">
+            <div class="top-num n1">1</div>
+            <div class="top-title">2026年俄罗斯钢铁市场深度分析</div>
+          </div>
+          <div class="top-post">
+            <div class="top-num n2">2</div>
+            <div class="top-title">用OpenClaw打造专属AI助手全自动化</div>
+          </div>
+          <div class="top-post">
+            <div class="top-num n3">3</div>
+            <div class="top-title">30天俄语速成：谐音记忆法300句</div>
+          </div>
+          <div class="top-post">
+            <div class="top-num n4">4</div>
+            <div class="top-title">首尔7天深度游攻略</div>
+          </div>
+          <div class="top-post">
+            <div class="top-num n5">5</div>
+            <div class="top-title">GI镀锌板出口全流程指南</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="widget">
+        <div class="widget-head">文章分类</div>
+        <div class="widget-body">
+          <div class="cat-item"><span class="cat-name">🌍 贸易资讯</span><span class="cat-count">38</span></div>
+          <div class="cat-item"><span class="cat-name">🤖 科技AI</span><span class="cat-count">24</span></div>
+          <div class="cat-item"><span class="cat-name">✈️ 旅行足迹</span><span class="cat-count">18</span></div>
+          <div class="cat-item"><span class="cat-name">📚 语言学习</span><span class="cat-count">22</span></div>
+          <div class="cat-item"><span class="cat-name">🎮 生活娱乐</span><span class="cat-count">15</span></div>
+          <div class="cat-item"><span class="cat-name">💼 创业思考</span><span class="cat-count">11</span></div>
+        </div>
+      </div>
+
+      <!-- Tags -->
+      <div class="widget">
+        <div class="widget-head">标签云</div>
+        <div class="widget-body">
+          <div class="tag-cloud">
+            <span class="tag-item">钢铁</span>
+            <span class="tag-item">PPGI</span>
+            <span class="tag-item">GI</span>
+            <span class="tag-item">俄语</span>
+            <span class="tag-item">韩国</span>
+            <span class="tag-item">AI</span>
+            <span class="tag-item">够级</span>
+            <span class="tag-item">出口</span>
+            <span class="tag-item">贸易</span>
+            <span class="tag-item">旅行</span>
+            <span class="tag-item">效率</span>
+            <span class="tag-item">OpenClaw</span>
+            <span class="tag-item">自动化</span>
+            <span class="tag-item">首尔</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent -->
+      <div class="widget">
+        <div class="widget-head">最新评论</div>
+        <div class="widget-body">
+          <div class="recent-item">
+            <div class="recent-thumb"><div class="cover-grad2 cover-text" style="font-size:22px">👤</div></div>
+            <div class="recent-info">
+              <h4>张三：文章写得很好，PPGI价格分析很准确！</h4>
+              <p>3小时前 · 钢铁市场分析</p>
+            </div>
+          </div>
+          <div class="recent-item">
+            <div class="recent-thumb"><div class="cover-grad4 cover-text" style="font-size:22px">👤</div></div>
+            <div class="recent-info">
+              <h4>李明：谐音记忆法真的有效，已经学了50句了！</h4>
+              <p>昨天 · 俄语速成</p>
+            </div>
+          </div>
+          <div class="recent-item">
+            <div class="recent-thumb"><div class="cover-grad1 cover-text" style="font-size:22px">👤</div></div>
+            <div class="recent-info">
+              <h4>王芳：AI做够级游戏这个想法太棒了！</h4>
+              <p>2天前 · 够级小程序</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a>首页</a><a>归档</a><a>分类</a><a>关于</a><a>友链</a><a>RSS</a><a>留言板</a>
+    </div>
+    <div class="footer-copy">
+      © 2026 <span>宋学文的博客</span> · Powered by <span>Puock Theme</span> · 鲁ICP备XXXXXXXX号
+    </div>
+  </div>
+</footer>
+
+<!-- Back to top -->
+<div class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+
+<script>
+// Dark mode
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  document.querySelector('.dark-toggle').textContent=document.body.classList.contains('dark')?'☀️':'🌙';
+}
+
+// Back to top
+window.addEventListener('scroll',()=>{
+  document.getElementById('backTop').classList.toggle('visible',window.scrollY>300);
+});
+</script>
+</body>
+</html>
